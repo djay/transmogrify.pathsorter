@@ -19,21 +19,21 @@ from collective.transmogrifier.tests import tearDown
 from collective.transmogrifier.sections.tests import PrettyPrinter
 from collective.transmogrifier.sections.tests import SampleSource
 
-from transmogrify.webcrawler.webcrawler import WebCrawler
-from transmogrify.webcrawler.treeserializer import TreeSerializer
-from transmogrify.webcrawler.typerecognitor import TypeRecognitor
-from transmogrify.webcrawler.safeportaltransforms import  SafePortalTransforms
-from transmogrify.webcrawler.makeattachments import MakeAttachments
+from transmogrify.pathsorter.webcrawler import WebCrawler
+from transmogrify.pathsorter.treeserializer import TreeSerializer
+from transmogrify.pathsorter.typerecognitor import TypeRecognitor
+from transmogrify.pathsorter.safeportaltransforms import  SafePortalTransforms
+from transmogrify.pathsorter.makeattachments import MakeAttachments
 from templatefinder import TemplateFinder
-from transmogrify.webcrawler.relinker import Relinker
-from transmogrify.webcrawler.simplexpath import SimpleXPath
+from transmogrify.pathsorter.relinker import Relinker
+from transmogrify.pathsorter.simplexpath import SimpleXPath
 from plone.i18n.normalizer import urlnormalizer
 from lxml import etree
 import lxml.html
 import lxml.html.soupparser
 from lxml.html.clean import Cleaner
 import urlparse
-import transmogrify.webcrawler
+import transmogrify.pathsorter
 from os.path import dirname, abspath
 import urllib
 
@@ -124,49 +124,49 @@ def setUp(test):
     provideUtility(PrettyPrinter,
         name=u'collective.transmogrifier.sections.tests.pprinter')
     provideUtility(WebCrawler,
-        name=u'transmogrify.webcrawler.webcrawler')
+        name=u'transmogrify.pathsorter.webcrawler')
     provideUtility(TreeSerializer,
-        name=u'transmogrify.webcrawler.treeserializer')
+        name=u'transmogrify.pathsorter.treeserializer')
     provideUtility(TypeRecognitor,
-        name=u'transmogrify.webcrawler.typerecognitor')
+        name=u'transmogrify.pathsorter.typerecognitor')
     provideUtility(TemplateFinder,
-        name=u'transmogrify.webcrawler.templatefinder')
+        name=u'transmogrify.pathsorter.templatefinder')
     provideUtility(urlnormalizer)
     provideUtility(Relinker,
-        name=u'transmogrify.webcrawler.relinker')
+        name=u'transmogrify.pathsorter.relinker')
     provideUtility(SimpleXPath,
-        name=u'transmogrify.webcrawler.simplexpath')
+        name=u'transmogrify.pathsorter.simplexpath')
     provideUtility(SafePortalTransforms,
-        name=u'transmogrify.webcrawler.safeportaltransforms')
+        name=u'transmogrify.pathsorter.safeportaltransforms')
     from backlinkstitle import BacklinksTitle
     provideUtility(BacklinksTitle,
-        name=u'transmogrify.webcrawler.backlinkstitle')
+        name=u'transmogrify.pathsorter.backlinkstitle')
     from isindex import IsIndex
     provideUtility(IsIndex,
-        name=u'transmogrify.webcrawler.isindex')
+        name=u'transmogrify.pathsorter.isindex')
     from pathmover import PathMover
     provideUtility(PathMover,
-        name=u'transmogrify.webcrawler.pathmover')
+        name=u'transmogrify.pathsorter.pathmover')
     from safeatschemaupdater import SafeATSchemaUpdaterSection
     provideUtility(SafeATSchemaUpdaterSection,
-        name=u'transmogrify.webcrawler.safeatschemaupdater')
+        name=u'transmogrify.pathsorter.safeatschemaupdater')
     from constructor import SafeConstructorSection
     provideUtility(SafeConstructorSection,
-        name=u'transmogrify.webcrawler.constructor')
+        name=u'transmogrify.pathsorter.constructor')
     from makeattachments import MakeAttachments
     provideUtility(MakeAttachments,
-        name=u'transmogrify.webcrawler.makeattachments')
+        name=u'transmogrify.pathsorter.makeattachments')
     from debugsection import DebugSection
     provideUtility(DebugSection,
-        name=u'transmogrify.webcrawler.debugsection')
+        name=u'transmogrify.pathsorter.debugsection')
     from staticcreator import StaticCreatorSection
     provideUtility(StaticCreatorSection,
-        name=u'transmogrify.webcrawler.staticcreator')
+        name=u'transmogrify.pathsorter.staticcreator')
 
     provideUtility(HTMLSource,
-        name=u'transmogrify.webcrawler.test.htmlsource')
+        name=u'transmogrify.pathsorter.test.htmlsource')
     provideUtility(HTMLBacklinkSource,
-        name=u'transmogrify.webcrawler.test.htmlbacklinksource')
+        name=u'transmogrify.pathsorter.test.htmlbacklinksource')
 
 
 def SafeATSchemaUpdaterSetUp(test):
@@ -220,7 +220,7 @@ def SafeATSchemaUpdaterSetUp(test):
                  'file.mimetype': 'image/jpeg',},
             )
     provideUtility(SafeATSchemaUpdaterSectionSource,
-        name=u'transmogrify.webcrawler.tests.safeatschemaupdatersource')
+        name=u'transmogrify.pathsorter.tests.safeatschemaupdatersource')
 
 def MakeAttachmentsSetUp(test):
     setUp(test)
@@ -248,24 +248,24 @@ def MakeAttachmentsSetUp(test):
                  '_type': 'Image'},
             )
     provideUtility(MakeAttachmentsSource,
-        name=u'transmogrify.webcrawler.tests.makeattachments')
+        name=u'transmogrify.pathsorter.tests.makeattachments')
     provideUtility(MakeAttachments,
-        name=u'transmogrify.webcrawler.makeattachments')
+        name=u'transmogrify.pathsorter.makeattachments')
 
 @onsetup
 def setup_product():
     """ """
     fiveconfigure.debug_mode = True
-    zcml.load_config('configure.zcml', transmogrify.webcrawler)
+    zcml.load_config('configure.zcml', transmogrify.pathsorter)
     fiveconfigure.debug_mode = False
     ztc.installPackage('plone.app.z3cform')
 #    ztc.installPackage('lovely.remotetask')
-    ztc.installPackage('transmogrify.webcrawler')
+    ztc.installPackage('transmogrify.pathsorter')
 
 
 setup_product()
-#ptc.setupPloneSite(extension_profiles=('transmogrify.webcrawler:default',), with_default_memberarea=False)
-ptc.setupPloneSite(products=['transmogrify.webcrawler'])
+#ptc.setupPloneSite(extension_profiles=('transmogrify.pathsorter:default',), with_default_memberarea=False)
+ptc.setupPloneSite(products=['transmogrify.pathsorter'])
 
 class TestCase(ptc.FunctionalTestCase):
     """ We use this base class for all the tests in this package. If necessary,
@@ -356,7 +356,7 @@ def test_suite():
 #                tearDown=tearDown),
 #        ztc.FunctionalDocFileSuite(
 #            'README.txt',
-#             package='transmogrify.webcrawler',
+#             package='transmogrify.pathsorter',
 #             test_class=TestCase,
 ##            tearDown=zc.buildout.testing.buildoutTearDown,
 #             optionflags = flags,

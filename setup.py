@@ -3,7 +3,7 @@ import os
 
 version = '0.2'
 
-setup(name='transmogrify.webcrawler',
+setup(name='transmogrify.pathsorter',
       version=version,
       description="",
       long_description=open(os.path.join("transmogrify", "webcrawler", "webcrawler.txt")).read() + "\n" +

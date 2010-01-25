@@ -10,7 +10,7 @@
 <!--	  <include package="collective.transmogrifier"/> -->
 
     <utility component=".webcrawler.WebCrawler"
-             name="transmogrify.webcrawler" />
+             name="transmogrify.pathsorter" />
 
 
 </configure>
