@@ -9,7 +9,7 @@
 	  <include package="collective.transmogrifier" file="meta.zcml"/>
 <!--	  <include package="collective.transmogrifier"/> -->
 
-    <utility component=".webcrawler.WebCrawler"
+    <utility component=".treeserializer.TreeSerializer"
              name="transmogrify.pathsorter" />
 
 
