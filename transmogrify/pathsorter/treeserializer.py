@@ -93,25 +93,35 @@ class TreeSerializer(object):
                 parts[-1] in self.default_pages and \
                 parent.get('_type') in self.default_containers:
                     parent['_defaultpage'] = parts[-1]
+                    
+                    # also in case we added the parent ourselves we need to give a sortorder
+                    if parent.get('_sortorder', None) is None:
+                        parent['_sortorder'] = item.get('_sortorder', None)
 
 
 
 
         # sort items based on which were found first ie sortorder, but also need to keep in tree order
-        order = []
-        items_keys = items.keys()
-        items_keys.sort()
+        # create a key for each item which is a list of sortorder for of each of it's parents
+        cur_sort_key = []
+        class KeyHolder:
+            value = None
+            __repr__ = lambda self: str(self.value)
+            __cmp__ = lambda x,y: cmp(x.value, y.value)
+            
         treeorder = []
-        for path in items_keys:
+        for path in sorted(items.keys()):
             item = items[path]
             depth = item['_path'].count('/')+1
-            sortorder = [item.get('_sortorder', None)]
-            # fill in any previous blanks on all copies
-            for i in order:
-                if i[0] is None:
-                    i[0] = sortorder[0]
-            order = [i for i in order[:depth-1] + [sortorder] ]
-            treeorder.append( (order, path, item) )
+            sortorder = item.get('_sortorder', None)
+            #some parents we created so we need to give them a sortorder
+            for key_part_holder in cur_sort_key:
+                if key_part_holder.value is None:
+                    key_part_holder.value = sortorder
+            new_key_part = KeyHolder()
+            new_key_part.value = sortorder
+            cur_sort_key = cur_sort_key[:depth-1] + [new_key_part]
+            treeorder.append( (cur_sort_key, path, item) )
         treeorder.sort()
 
         for sortorder, path, item in treeorder:

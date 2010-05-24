@@ -9,8 +9,6 @@ from zope.interface import classProvides, implements
 from collective.transmogrifier.interfaces import ISectionBlueprint, ISection
 
 from Testing import ZopeTestCase as ztc
-from Products.PloneTestCase import PloneTestCase as ptc
-from Products.PloneTestCase.layer import onsetup
 from Products.Five import zcml
 from Products.Five import fiveconfigure
 
@@ -19,93 +17,17 @@ from collective.transmogrifier.tests import tearDown
 from collective.transmogrifier.sections.tests import PrettyPrinter
 from collective.transmogrifier.sections.tests import SampleSource
 
-from transmogrify.pathsorter.webcrawler import WebCrawler
-from transmogrify.pathsorter.treeserializer import TreeSerializer
-from transmogrify.pathsorter.typerecognitor import TypeRecognitor
-from transmogrify.pathsorter.safeportaltransforms import  SafePortalTransforms
-from transmogrify.pathsorter.makeattachments import MakeAttachments
-from templatefinder import TemplateFinder
-from transmogrify.pathsorter.relinker import Relinker
-from transmogrify.pathsorter.simplexpath import SimpleXPath
-from plone.i18n.normalizer import urlnormalizer
+from transmogrify.webcrawler.webcrawler import WebCrawler
+from treeserializer import TreeSerializer
+from transmogrify.webcrawler.typerecognitor import TypeRecognitor
+import transmogrify.pathsorter
 from lxml import etree
 import lxml.html
 import lxml.html.soupparser
 from lxml.html.clean import Cleaner
 import urlparse
-import transmogrify.pathsorter
 from os.path import dirname, abspath
 import urllib
-
-
-class HTMLSource(object):
-    classProvides(ISectionBlueprint)
-    implements(ISection)
-
-    def __init__(self, transmogrifier, name, options, previous):
-        self.previous = previous
-        self.items = []
-        for order,item in zip(range(0,len(options)),options.items()):
-            path,text = item 
-            if path in ['blueprint']:
-                continue
-            item_ = dict(_mimetype="text/html",
-                        _site_url="http://test.com/",
-                        _path=path,    
-                        text=text,
-                        _sortorder=order)
-            self.items.append(item_)
-
-    def __iter__(self):
-        for item in self.previous:
-            yield item
-
-        for item in self.items:
-            yield item
-
-class HTMLBacklinkSource(HTMLSource):
-    classProvides(ISectionBlueprint)
-    implements(ISection)
-
-    def __init__(self, transmogrifier, name, options, previous):
-        HTMLSource.__init__(self, transmogrifier, name, options, previous)
-        pathtoitem = {}
-        for item in self.items:
-            pathtoitem[item['_site_url']+item['_path']] = item
-        for item in self.items:
-            parser = lxml.html.soupparser.fromstring(item['text'])
-            for element, attribute, rawlink, pos in parser.iterlinks():
-                t = urlparse.urlparse(rawlink)
-                fragment = t[-1]
-                t = t[:-1] + ('',)
-                rawlink = urlparse.urlunparse(t)
-                base = item['_site_url']+item['_path']
-                link = urlparse.urljoin(base, rawlink)
-                linked = pathtoitem.get(link)
-                if linked:
-                    linked.setdefault('_backlinks',[]).append((base,element.text_content()))
-
-
-class MockPortalTransforms(object):
-    def __call__(self, transform, data):
-        return 'Transformed %i using the %s transform' % (len(data), transform)
-    def convertToData(self, target, data, mimetype=None):
-        html='<img src="image01.jpg"><img src="image02.jpg">'
-        class dummyfile:
-            def __init__(self, text):
-                self.text = text
-            def __str__(self):
-                return self.text+html
-            def getSubObjects(self):
-                return {'image01.jpg':data,'image02.jpg':data}
-        if mimetype is not None:
-            return dummyfile( 'Transformed %i from %s to %s' % (
-                len(data), mimetype, target) )
-        else:
-            return dummyfile('Transformed %r to %s' % (data, target) )
-    def convertTo(self, target, data, mimetype=None):
-        return self.convertToData(target,data,mimetype)
-
 
 
 def setUp(test):
@@ -168,91 +90,7 @@ def setUp(test):
     provideUtility(HTMLBacklinkSource,
         name=u'transmogrify.pathsorter.test.htmlbacklinksource')
 
-
-def SafeATSchemaUpdaterSetUp(test):
-    setUp(test)
-
-    from Products.Archetypes.interfaces import IBaseObject
-    class MockPortal(object):
-        implements(IBaseObject)
-
-        def unrestrictedTraverse(self, path, default):
-            return self
-
-        _file_value = None
-        _file_filename = None
-        _file_mimetype = None
-        _file_field = None
-
-        def set(self, name, value, **arguments):
-            self._file_field = name
-            self._file_value = value
-            if 'mimetype' in arguments:
-                self._file_mimetype = arguments['mimetype']
-            if 'filename' in arguments:
-                self._file_filename = arguments['filename']
-
-        def get(self, name):
-            return self._file_value
-
-        def checkCreationFlag(self):
-            pass
-
-        def unmarkCreationFlag(self):
-            pass
-
-        def getField(self, name):
-            return self
-
-    test.globs['plone'] = MockPortal()
-    test.globs['transmogrifier'].context = test.globs['plone']
-
-    class SafeATSchemaUpdaterSectionSource(SampleSource):
-        classProvides(ISectionBlueprint)
-        implements(ISection)
-
-        def __init__(self, *args, **kw):
-            super(SafeATSchemaUpdaterSectionSource, self).__init__(*args, **kw)
-            self.sample = (
-                {'_path': '/dummy',
-                 'file': 'image content',
-                 'file.filename': 'image.jpg',
-                 'file.mimetype': 'image/jpeg',},
-            )
-    provideUtility(SafeATSchemaUpdaterSectionSource,
-        name=u'transmogrify.pathsorter.tests.safeatschemaupdatersource')
-
-def MakeAttachmentsSetUp(test):
-    setUp(test)
-
-    class MakeAttachmentsSource(SampleSource):
-        classProvides(ISectionBlueprint)
-        implements(ISection)
-
-        def __init__(self, *args, **kw):
-            super(MakeAttachmentsSource, self).__init__(*args, **kw)
-            self.sample = (
-                {'_site_url': 'http://www.test.com',
-                 '_path': '/item1',},
-                {'_site_url': 'http://www.test.com',
-                 '_path': '/subitem1',
-                 '_backlinks': [('http://www.test.com/subitem2', '')],
-                 'title': 'subitem1 title',
-                 'decription': 'test if condition is working',
-                 '_type': 'Document'},
-                {'_site_url': 'http://www.test.com',
-                 '_path': '/subitem2',
-                 '_backlinks': [('http://www.test.com/subitem1', '')],
-                 'title': 'subitem2 title',
-                 'image': 'subitem2 image content',
-                 '_type': 'Image'},
-            )
-    provideUtility(MakeAttachmentsSource,
-        name=u'transmogrify.pathsorter.tests.makeattachments')
-    provideUtility(MakeAttachments,
-        name=u'transmogrify.pathsorter.makeattachments')
-
-@onsetup
+#@onsetup
 def setup_product():
     """ """
     fiveconfigure.debug_mode = True
@@ -305,69 +143,11 @@ def test_suite():
                         doctest.NORMALIZE_WHITESPACE | doctest.REPORT_UDIFF
 
     return unittest.TestSuite((
-        doctest.DocFileSuite('webcrawler.txt', 
-                setUp=setUp, 
-                optionflags = flags,
-                tearDown=tearDown),
 
-#        doctest.DocFileSuite('treeserializer.txt', 
-#                setUp=setUp, 
-#                tearDown=tearDown, 
-#                optionflags=flags),
-#        doctest.DocFileSuite('typerecognitor.txt', 
-#                setUp=setUp, 
-#                optionflags = flags,
-#                tearDown=tearDown),
-#        doctest.DocFileSuite('templatefinder.txt', 
-#                setUp=setUp, 
-#                optionflags = flags,
-#                tearDown=tearDown),
-#        doctest.DocFileSuite('relinker.txt', 
-#                setUp=setUp, 
-#                optionflags = flags,
-#                tearDown=tearDown),
-#        doctest.DocFileSuite('pathmover.txt', 
-#                setUp=setUp, 
-#                optionflags = flags,
-#                tearDown=tearDown),
-#        doctest.DocFileSuite('simplexpath.txt', 
-#                setUp=setUp, 
-#                optionflags = flags,
-#                tearDown=tearDown),
-#        doctest.DocFileSuite('testsites.txt', 
-#                setUp=setUp,
-#                optionflags = flags,
-#                tearDown=tearDown),
-#        doctest.DocFileSuite('safeatschemaupdater.txt',
-#                setUp=SafeATSchemaUpdaterSetUp,
-#                optionflags = flags,
-#                tearDown=tearDown),
-#        doctest.DocFileSuite('makeattachments.txt',
-#                setUp=MakeAttachmentsSetUp,
-#                optionflags = flags,
-#                tearDown=tearDown),
-#        doctest.DocFileSuite('isindex.txt',
-#                setUp=MakeAttachmentsSetUp,
-#                optionflags = flags,
-#                tearDown=tearDown),
-#        doctest.DocFileSuite('safeportaltransforms.txt',
-#                setUp=MakeAttachmentsSetUp,
-#                optionflags = flags,
-#                tearDown=tearDown),
-#        ztc.FunctionalDocFileSuite(
-#            'README.txt',
-#             package='transmogrify.pathsorter',
-#             test_class=TestCase,
-##            tearDown=zc.buildout.testing.buildoutTearDown,
-#             optionflags = flags,
-#            #globs=globs,
-##            checker=renormalizing.RENormalizing([
-##               zc.buildout.testing.normalize_path,
-#               #zc.buildout.testing.normalize_script,
-#               #zc.buildout.testing.normalize_egg_py,
-#               #zc.buildout.tests.normalize_bang,
-# #              ]),
-#            ),
+        doctest.DocFileSuite('treeserializer.txt', 
+                setUp=setUp, 
+                tearDown=tearDown, 
+                optionflags=flags),
 
 
 
