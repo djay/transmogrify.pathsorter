@@ -105,7 +105,9 @@ class TreeSerializer(object):
         # create a key for each item which is a list of sortorder for of each of it's parents
         cur_sort_key = []
         class KeyHolder:
-            value = None
+            def __init__(self, value):
+                self.value = value
+                self.created = value is None
             __repr__ = lambda self: str(self.value)
             __cmp__ = lambda x,y: cmp(x.value, y.value)
             
@@ -114,14 +116,18 @@ class TreeSerializer(object):
             item = items[path]
             depth = item['_path'].count('/')+1
             sortorder = item.get('_sortorder', None)
-            #some parents we created so we need to give them a sortorder
-            for key_part_holder in cur_sort_key:
-                if key_part_holder.value is None:
-                    key_part_holder.value = sortorder
-            new_key_part = KeyHolder()
-            new_key_part.value = sortorder
+            new_key_part = KeyHolder(sortorder)
             cur_sort_key = cur_sort_key[:depth-1] + [new_key_part]
             treeorder.append( (cur_sort_key, path, item) )
+
+            #some parents we created so we give them smallest sortorder
+            for keyholder in cur_sort_key[:-1]:
+                if not keyholder.created:
+                    continue
+                if keyholder.value is None or sortorder < keyholder.value:
+                    keyholder.value = sortorder
+
+
         treeorder.sort()
 
         for sortorder, path, item in treeorder:
