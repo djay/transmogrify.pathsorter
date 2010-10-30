@@ -131,7 +131,7 @@ class TreeSerializer(object):
         treeorder.sort()
 
         for sortorder, path, item in treeorder:
-            print sortorder, item['_path']
+            #print sortorder, item['_path']
             yield item
 
 

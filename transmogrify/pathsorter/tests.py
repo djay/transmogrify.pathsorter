@@ -105,37 +105,6 @@ setup_product()
 #ptc.setupPloneSite(extension_profiles=('transmogrify.pathsorter:default',), with_default_memberarea=False)
 ptc.setupPloneSite(products=['transmogrify.pathsorter'])
 
-class TestCase(ptc.FunctionalTestCase):
-    """ We use this base class for all the tests in this package. If necessary,
-        we can put common utility or setup code in here. This applies to unit
-        test cases. """
-    _configure_portal = False
-
-    def beforeTearDown(self):
-        pass
-
-    def afterSetUp(self):
-        here = abspath(dirname(__file__))
-        url = urllib.pathname2url(here)
-        self.testsite = 'file://%s/test_staticsite' % url
-
-        self.portal.error_log._ignored_exceptions = ()
-
-        self.portal.acl_users.portal_role_manager.updateRolesList()
-
-        self.portal.acl_users._doAddUser('manager', 'pass', ('Manager',), [])
-        self.login('manager')
-
-
-
-        from Products.Five.testbrowser import Browser
-        self.browser = Browser()
-#        self.setRoles(('Manager',))
-        self.browser.open(self.portal.absolute_url()+'/login_form')
-        self.browser.getControl(name='__ac_name').value = 'manager'
-        self.browser.getControl(name='__ac_password').value = 'pass'
-        self.browser.getControl(name='submit').click()
-        self.browser.open(self.portal.absolute_url())
 
 
 def test_suite():
