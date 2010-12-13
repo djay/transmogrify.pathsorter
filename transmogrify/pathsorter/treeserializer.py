@@ -6,7 +6,6 @@ from collective.transmogrifier.interfaces import ISectionBlueprint
 from collective.transmogrifier.interfaces import ISection
 
 import logging
-logger = logging.getLogger('Plone')
 
 class TreeSerializer(object):
     classProvides(ISectionBlueprint)
@@ -16,6 +15,8 @@ class TreeSerializer(object):
         self.previous = previous
         self.default_pages = options.get('default_pages', 'index.html').split()
         self.default_containers = options.get('default_containers', 'Folder').split()
+        self.name = name
+        self.logger = logging.getLogger('%s(%s)'% (name, 'pathsorter'))
 
     def __iter__(self):
         items = {}
@@ -73,8 +74,7 @@ class TreeSerializer(object):
                             pass
                         items[item['_site_url']+parentpath] = newparent
 
-                        msg = "treeserialize: moved folder to %s" %(parent['_path'])
-                        logger.log(logging.DEBUG, msg)
+                        self.logger.debug("treeserialize: moved folder to %s" %(parent['_path']))
                 else:
                     # parent which hasn't had a folder added yet
                     newparent = dict(
@@ -82,8 +82,7 @@ class TreeSerializer(object):
                         _type     = self.default_containers[0],
                         _site_url = item['_site_url'])
                     items[item['_site_url']+basepath] = newparent
-                    msg = "treeserialize: adding folder %s" %(basepath)
-                    logger.log(logging.DEBUG, msg)
+                    self.logger.info("adding folder %s" %(basepath))
                 if basepath != item['_path']:
                     parent = items.get(item['_site_url']+basepath)
                     basepath += '/'
@@ -131,7 +130,8 @@ class TreeSerializer(object):
         treeorder.sort()
 
         for sortorder, path, item in treeorder:
-            #print sortorder, item['_path']
-            yield item
+            self.logger.debug('Order: %s: %s' % (sortorder, item['_path']))
 
+        for sortorder, path, item in treeorder:
+            yield item
 
