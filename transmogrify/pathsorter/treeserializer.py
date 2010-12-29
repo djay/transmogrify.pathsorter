@@ -31,6 +31,8 @@ class TreeSerializer(object):
                     path = path[1:]
                 items[base+path] = item
 
+        added_folders = set({})
+        added_index = set()
         # build tree
         items_keys = items.keys()
         
@@ -40,7 +42,8 @@ class TreeSerializer(object):
             item_fullurl = item
             item = items[item]
 
-            parts = item['_path'].split('/')
+            # add root folder so we can set default page on it
+            parts = ['']+item['_path'].split('/')
 #            if parts[0] == '':
 #                parts = parts[1:]
 
@@ -82,22 +85,25 @@ class TreeSerializer(object):
                         _type     = self.default_containers[0],
                         _site_url = item['_site_url'])
                     items[item['_site_url']+basepath] = newparent
-                    self.logger.info("adding folder %s" %(basepath))
+                    self.logger.debug("adding folder %s" %(basepath))
+                    added_folders.add(basepath)
                 if basepath != item['_path']:
                     parent = items.get(item['_site_url']+basepath)
-                    basepath += '/'
+                    if basepath != '':
+                        basepath += '/'
 
             #case item is a default page
             if parts and parent and parent.get('_defaultpage') is None and \
                 parts[-1] in self.default_pages and \
                 parent.get('_type') in self.default_containers:
                     parent['_defaultpage'] = parts[-1]
+                    added_index.add(parent['_path'])
                     
                     # also in case we added the parent ourselves we need to give a sortorder
                     if parent.get('_sortorder', None) is None:
                         parent['_sortorder'] = item.get('_sortorder', None)
 
-
+        self.logger.info("%d folders added. %d defaultpages set" %(len(added_folders),len(added_index)))
 
 
         # sort items based on which were found first ie sortorder, but also need to keep in tree order
