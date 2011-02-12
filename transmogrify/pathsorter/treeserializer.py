@@ -103,7 +103,8 @@ class TreeSerializer(object):
                     if parent.get('_sortorder', None) is None:
                         parent['_sortorder'] = item.get('_sortorder', None)
 
-        self.logger.info("%d folders added. %d defaultpages set" %(len(added_folders),len(added_index)))
+        self.logger.info("%d folders added. %d defaultpages set, %d items sorted" %
+                         (len(added_folders), len(added_index), len(items)))
 
 
         # sort items based on which were found first ie sortorder, but also need to keep in tree order
